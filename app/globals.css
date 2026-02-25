@@ -4,7 +4,44 @@
   --background: #ffffff;
   --foreground: #171717;
 }
+/* ===== Smaller Elegant Arrows ===== */
 
+.swiper-button-next,
+.swiper-button-prev {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.swiper-button-next::after,
+.swiper-button-prev::after {
+  font-size: 10px !important; /* smaller arrow icon */
+  font-weight: 700;
+  color: white;
+}
+
+/* Position closer to edge */
+.swiper-button-next {
+  right: 8px;
+}
+
+.swiper-button-prev {
+  left: 8px;
+}
+
+/* Optional: hide slightly until hover */
+.swiper-button-next,
+.swiper-button-prev {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.group:hover .swiper-button-next,
+.group:hover .swiper-button-prev {
+  opacity: 1;
+}
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
