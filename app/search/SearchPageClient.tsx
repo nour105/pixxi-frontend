@@ -14,8 +14,8 @@ export default function SearchPageClient() {
   // URL params
   const keyword = normalize(searchParams.get("q"));
   const purpose = normalize(searchParams.get("purpose")).toUpperCase();
-  const typeParam = normalize(searchParams.get("type"));
-  const bedroomsParam = normalize(searchParams.get("bedrooms"));
+  const typeParam = normalize(searchParams.get("type")); // property type dropdown
+  const bedroomsParam = normalize(searchParams.get("bedrooms")); // bedrooms dropdown
   const pageFromUrl = Number(searchParams.get("page")) || 1;
 
   // state
@@ -23,12 +23,8 @@ export default function SearchPageClient() {
   const [currentPage, setCurrentPage] = useState(pageFromUrl);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-  // fetch all projects
+  // fetch all projects from API
   const fetchAllProjects = async () => {
-    if (!API_URL || !purpose) return;
-
     setLoading(true);
     try {
       let page = 1;
@@ -41,22 +37,16 @@ export default function SearchPageClient() {
           page: page.toString(),
           size: "100",
         });
-
-        const res = await fetch(
-          `${API_URL}/api/properties?${query.toString()}`,
-          { cache: "no-store" }
-        );
-
+        const res = await fetch(`https://admin.bnan-realestate.com//api/properties?${query.toString()}`, {
+          cache: "no-store",
+        });
         const json = await res.json();
-
-        projects = projects.concat(json?.data?.list || []);
-        totalPages = Math.ceil((json?.data?.totalSize || 0) / 100);
+        projects = projects.concat(json.data.list || []);
+        totalPages = Math.ceil(json.data.totalSize / 100);
         page++;
       } while (page <= totalPages);
 
       setAllProjects(projects);
-    } catch (err) {
-      console.error("Search fetch error:", err);
     } finally {
       setLoading(false);
     }
@@ -64,47 +54,44 @@ export default function SearchPageClient() {
 
   useEffect(() => {
     fetchAllProjects();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [purpose]);
 
-  // filtering
-  const filteredList = useMemo(() => {
-    return allProjects.filter((item: any) => {
-      const city = normalize(item.cityName);
-      const region = normalize(item.region);
-      const developer = normalize(item.developer);
-      const title = normalize(item.title);
-      const listingType = normalize(item.listingType);
+  // Filtered & searchable list
+ const filteredList = useMemo(() => {
+  return allProjects.filter((item: any) => {
+    const city = normalize(item.cityName);
+    const region = normalize(item.region);
+    const developer = normalize(item.developer);
+    const title = normalize(item.title);
+    const listingType = normalize(item.listingType);
+    const propertyTypes = item.propertyType?.map(normalize) || [];
+    const floorPlans = item.newParam?.floorPlan?.map((fp: any) => normalize(fp.name)) || [];
 
-      const propertyTypes = item.propertyType?.map(normalize) || [];
-      const floorPlans =
-        item.newParam?.floorPlan?.map((fp: any) => normalize(fp.name)) || [];
+    // Keyword search
+    const matchesKeyword =
+      !keyword ||
+      city.includes(keyword) ||
+      region.includes(keyword) ||
+      developer.includes(keyword) ||
+      title.includes(keyword) ||
+      listingType.includes(keyword);
 
-      const matchesKeyword =
-        !keyword ||
-        city.includes(keyword) ||
-        region.includes(keyword) ||
-        developer.includes(keyword) ||
-        title.includes(keyword) ||
-        listingType.includes(keyword);
+    // Property type filter (exact match)
+    const matchesType = !typeParam || propertyTypes.includes(typeParam);
 
-      const matchesType = !typeParam || propertyTypes.includes(typeParam);
+    // Bedrooms filter (exact match)
+    const matchesBedrooms =
+      !bedroomsParam || floorPlans.includes(bedroomsParam + " bedrooms"); // ensure exact match like "2 Bedrooms"
 
-      const matchesBedrooms =
-        !bedroomsParam ||
-        floorPlans.includes(`${bedroomsParam} bedrooms`);
+    return matchesKeyword && matchesType && matchesBedrooms;
+  });
+}, [allProjects, keyword, typeParam, bedroomsParam]);
 
-      return matchesKeyword && matchesType && matchesBedrooms;
-    });
-  }, [allProjects, keyword, typeParam, bedroomsParam]);
 
-  // pagination
+  // Pagination
   const total = filteredList.length;
   const totalPages = Math.ceil(total / PER_PAGE);
-  const paginatedList = filteredList.slice(
-    (currentPage - 1) * PER_PAGE,
-    currentPage * PER_PAGE
-  );
+  const paginatedList = filteredList.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   const changePage = (page: number) => {
     const params = new URLSearchParams(searchParams.toString());

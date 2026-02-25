@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000/api";
+const API_URL = "https://admin.bnan-realestate.com/api";
 
 export async function getProperties(params?: Record<string, any>) {
   const query = new URLSearchParams(params as any).toString();
@@ -10,7 +10,7 @@ export async function getProperties(params?: Record<string, any>) {
 
 export async function getDeveloperProperties(name: string, page = 1, size = 12) {
   const res = await fetch(
-    `http://localhost:8000/api/developers/${encodeURIComponent(name)}/properties?size=${size}&page=${page}`,
+    `${API_URL}/developers/${encodeURIComponent(name)}/properties?size=${size}&page=${page}`,
     { cache: "no-store" }
   );
 
@@ -45,7 +45,7 @@ export const getPropertiesByArea = async (areaName: string) => {
 };
 // api.ts
 // export const getProjectsByCityy = async (city: string) => {
-//   const res = await fetch(`http://localhost:8000/api/properties?city=${encodeURIComponent(city)}`);
+//   const res = await fetch(`https://admin.bnan-realestate.com/api/properties?city=${encodeURIComponent(city)}`);
 //   if (!res.ok) throw new Error("Failed to fetch projects");
 //   return res.json();
 // };
@@ -55,7 +55,7 @@ export const getProjectsByCity = async (
   size = 12
 ) => {
   const res = await fetch(
-    `http://localhost:8000/api/properties?city=${encodeURIComponent(
+    `${API_URL}/properties?city=${encodeURIComponent(
       city
     )}&page=1&size=2000`
   );

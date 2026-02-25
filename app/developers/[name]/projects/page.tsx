@@ -1,55 +1,42 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
+import useSWR from "swr";
 import { getDeveloperProperties } from "../../../lib/api";
+import PropertyCard from "../../../components/home/ProjectCard";
 
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination, Autoplay } from "swiper/modules";
-
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/pagination";
-
-interface Property {
-  id: number;
-  title: string;
-  price: number;
-  photos: string[];
-  region: string;
-  cityName: string;
-}
+const PAGE_SIZE = 6;
 
 export default function DeveloperProjectsPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const developerName = params.name as string;
+  const page = Number(searchParams.get("page")) || 1;
 
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalSize, setTotalSize] = useState(0);
-  const [loading, setLoading] = useState(false);
+  // ✅ مهم: page داخل الـ key
+  const { data, isLoading } = useSWR(
+    developerName
+      ? [`developer-projects`, developerName, page]
+      : null,
+    () => getDeveloperProperties(developerName, page, PAGE_SIZE),
+    {
+      revalidateOnFocus: false,
+      keepPreviousData: true,
+    }
+  );
 
-  const pageSize = 6;
+  const properties = data?.data?.list ?? [];
+  const totalSize = data?.data?.totalSize ?? 0;
+  const totalPages = Math.ceil(totalSize / PAGE_SIZE);
 
-  useEffect(() => {
-    if (!developerName) return;
+  const goToPage = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
 
-    setLoading(true);
-
-    getDeveloperProperties(developerName, currentPage, pageSize)
-      .then((res) => {
-        setProperties(res.data.list || []);
-        setTotalSize(res.data.totalSize || 0);
-      })
-      .finally(() => setLoading(false));
-  }, [developerName, currentPage]);
-
-  const totalPages = Math.ceil(totalSize / pageSize);
-
-  const goToPage = (page: number) => {
-    if (page < 1 || page > totalPages) return;
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", String(newPage));
+    router.push(`?${params.toString()}`);
   };
 
   return (
@@ -58,55 +45,51 @@ export default function DeveloperProjectsPage() {
         {developerName} Projects
       </h1>
 
-      {loading && (
-        <div className="text-center py-10">Loading projects...</div>
+      {/* loading فقط أول مرة */}
+      {isLoading && properties.length === 0 && (
+        <p className="text-center py-10">Loading projects...</p>
       )}
 
-      {!loading && properties.length === 0 && (
-        <div className="text-center py-10">
-          No projects found.
-        </div>
+      {!isLoading && properties.length === 0 && (
+        <p className="text-center py-10">No projects found.</p>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {properties.map((prop) => (
+        {properties.map((prop: any) => (
           <PropertyCard key={prop.id} property={prop} />
         ))}
       </div>
 
-      {/* ===== Improved Pagination ===== */}
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center mt-12 gap-2 flex-wrap">
-          {/* Prev */}
+        <div className="flex justify-center gap-2 mt-12 flex-wrap">
           <button
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage === 1}
+            disabled={page === 1}
+            onClick={() => goToPage(page - 1)}
             className="px-4 py-2 border rounded disabled:opacity-40"
           >
             Prev
           </button>
 
-          {/* Page Numbers */}
-          {Array.from({ length: totalPages }).map((_, index) => {
-            const page = index + 1;
+          {Array.from({ length: totalPages }).map((_, i) => {
+            const p = i + 1;
 
-            // Show only nearby pages for clean UI
             if (
-              page === 1 ||
-              page === totalPages ||
-              Math.abs(page - currentPage) <= 1
+              p === 1 ||
+              p === totalPages ||
+              Math.abs(p - page) <= 1
             ) {
               return (
                 <button
-                  key={page}
-                  onClick={() => goToPage(page)}
+                  key={p}
+                  onClick={() => goToPage(p)}
                   className={`px-4 py-2 border rounded ${
-                    currentPage === page
+                    p === page
                       ? "bg-black text-white"
-                      : "bg-white hover:bg-gray-100"
+                      : "hover:bg-gray-100"
                   }`}
                 >
-                  {page}
+                  {p}
                 </button>
               );
             }
@@ -114,10 +97,9 @@ export default function DeveloperProjectsPage() {
             return null;
           })}
 
-          {/* Next */}
           <button
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
+            disabled={page === totalPages}
+            onClick={() => goToPage(page + 1)}
             className="px-4 py-2 border rounded disabled:opacity-40"
           >
             Next
@@ -125,51 +107,5 @@ export default function DeveloperProjectsPage() {
         </div>
       )}
     </section>
-  );
-}
-
-/* ============================= */
-/* Property Card with Swiper    */
-/* ============================= */
-
-function PropertyCard({ property }: { property: Property }) {
-  const images = property.photos || [];
-
-  return (
-    <div className="border rounded-lg overflow-hidden shadow hover:shadow-xl transition duration-300">
-      {images.length > 0 && (
-      <Swiper
-  modules={[Navigation, Pagination, Autoplay]}
-  navigation
-  pagination={{ clickable: true }}
-  autoplay={{ delay: 4000 }}
-  loop
-  slidesPerView={1}
-  className="h-52 group"
->
-          {images.map((img, index) => (
-            <SwiperSlide key={index}>
-              <img
-                src={img}
-                alt={property.title}
-                className="w-full h-52 object-cover"
-              />
-            </SwiperSlide>
-          ))}
-        </Swiper>
-      )}
-
-      <div className="p-4">
-        <h2 className="font-semibold text-lg mb-1">
-          {property.title}
-        </h2>
-        <p className="text-gray-500 text-sm">
-          {property.cityName} - {property.region}
-        </p>
-        <p className="mt-3 font-bold text-blue-600">
-          AED {property.price?.toLocaleString()}
-        </p>
-      </div>
-    </div>
   );
 }

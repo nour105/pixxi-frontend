@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getProjectsByCity } from "../../lib/api";
+import useSWR from "swr";
 import ProjectCard from "./ProjectCard";
+import { getProjectsByCity } from "../../lib/api";
+import { useState } from "react";
 
 const CITIES = [
   { label: "Dubai", value: "Dubai" },
@@ -17,25 +18,29 @@ const normalize = (value: string) =>
 
 export default function FeaturedProjectsByCity() {
   const [city, setCity] = useState("Dubai");
-  const [projects, setProjects] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
+  // fetcher (مرة وحدة فقط)
+  const fetcher = async () => {
+    const res = await getProjectsByCity("", 1, 50);
+    return res.data?.list || [];
+  };
 
-    getProjectsByCity("", 1, 50)
-      .then((res) => {
-        const list = res.data?.list || [];
+  // SWR cache
+  const { data: allProjects = [], isLoading } = useSWR(
+    "featured-projects", // cache key
+    fetcher,
+    {
+      revalidateOnFocus: false, // ما يعيد fetch عند الرجوع للتاب
+      dedupingInterval: 5 * 60 * 1000, // cache 5 دقائق
+    }
+  );
 
-        const filtered = list.filter((p: any) =>
-          normalize(p.cityName) === normalize(city)
-        );
-
-        setProjects(filtered.slice(0, 4));
-      })
-      .catch(() => setProjects([]))
-      .finally(() => setLoading(false));
-  }, [city]);
+  // filter locally (سريع جدًا)
+  const projects = allProjects
+    .filter(
+      (p: any) => normalize(p.cityName) === normalize(city)
+    )
+    .slice(0, 4);
 
   return (
     <section className="max-w-6xl mx-auto py-16 px-4">
@@ -63,14 +68,15 @@ export default function FeaturedProjectsByCity() {
         ))}
       </div>
 
-      {loading ? (
-        <p>Loading...</p>
+      {/* أول مرة فقط */}
+      {isLoading && allProjects.length === 0 ? (
+        <p>Loading projects...</p>
       ) : projects.length === 0 ? (
         <p>No projects found for {city}.</p>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {projects.map((item) => (
+            {projects.map((item: any) => (
               <ProjectCard key={item.id} property={item} />
             ))}
           </div>

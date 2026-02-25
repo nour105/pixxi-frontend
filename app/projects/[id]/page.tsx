@@ -26,7 +26,7 @@ export default function ProjectPage() {
     const fetchProject = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`http://localhost:8000/api/properties/external/${id}`, { cache: "no-store" });
+        const res = await fetch(`https://admin.bnan-realestate.com/api/properties/external/${id}`, { cache: "no-store" });
         const json = await res.json();
         setProject(json.data);
       } catch (err) {
@@ -41,7 +41,7 @@ export default function ProjectPage() {
   useEffect(() => {
     const fetchAmenities = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/properties/amenities`);
+        const res = await fetch(`https://admin.bnan-realestate.com/api/properties/amenities`);
         const json = await res.json();
         const map: Record<string, string> = {};
         json.data.forEach((amenity: any) => {

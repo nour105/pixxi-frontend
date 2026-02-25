@@ -1,4 +1,3 @@
-'use client';
 
 import { getDevelopers } from "../../lib/api";
 import Link from "next/link";
