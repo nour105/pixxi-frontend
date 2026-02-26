@@ -1,8 +1,15 @@
 import Link from "next/link";
+import { slugify } from "../../utils/slugify";
 
+// Helper to encode property names for URLs
+function encodeName(name: string) {
+  return encodeURIComponent(name);
+}
 export default function ProjectCard({ property }: any) {
+const slug = slugify(property.title || property.name);
+
   return (
-    <Link href={`/projects/${property.propertyId}`} className="block">
+<Link href={`/projects/${slug}`}>
       <div className="rounded-2xl overflow-hidden shadow-lg bg-white group hover:-translate-y-1 transition cursor-pointer">
         {/* Image */}
         <div className="relative h-56">
