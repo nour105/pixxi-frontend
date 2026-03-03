@@ -1,9 +1,16 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import useSWR from "swr";
-import ProjectCard from "./ProjectCard";
+import dynamic from "next/dynamic";
 import { getProjectsByCity } from "../../lib/api";
-import { useState } from "react";
+
+const ProjectCard = dynamic(() => import("./ProjectCard"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-64 rounded-xl bg-gray-200 animate-pulse" />
+  ),
+});
 
 const CITIES = [
   { label: "Dubai", value: "Dubai" },
@@ -12,35 +19,49 @@ const CITIES = [
   { label: "Ras Al Khaimah", value: "Ras Al Khaimah" },
 ];
 
-// normalize helper
 const normalize = (value: string) =>
   value?.toLowerCase().replace(/\s+/g, "");
+
+const fetcher = async () => {
+  const res = await getProjectsByCity("", 1, 60);
+  return res?.data?.list || [];
+};
 
 export default function FeaturedProjectsByCity() {
   const [city, setCity] = useState("Dubai");
 
-  // fetcher (مرة وحدة فقط)
-  const fetcher = async () => {
-    const res = await getProjectsByCity("", 1, 50);
-    return res.data?.list || [];
-  };
-
-  // SWR cache
   const { data: allProjects = [], isLoading } = useSWR(
-    "featured-projects", // cache key
+    "featured-projects-all",
     fetcher,
     {
-      revalidateOnFocus: false, // ما يعيد fetch عند الرجوع للتاب
-      dedupingInterval: 5 * 60 * 1000, // cache 5 دقائق
+      revalidateOnFocus: false,
+      dedupingInterval: 10 * 60 * 1000,
     }
   );
 
-  // filter locally (سريع جدًا)
-  const projects = allProjects
-    .filter(
-      (p: any) => normalize(p.cityName) === normalize(city)
-    )
-    .slice(0, 4);
+  const projectsByCity = useMemo(() => {
+    const map: Record<string, any[]> = {
+      Dubai: [],
+      "Abu Dhabi": [],
+      Sharjah: [],
+      "Ras Al Khaimah": [],
+    };
+
+    for (const project of allProjects) {
+      for (const c of CITIES) {
+        if (
+          normalize(project.cityName) === normalize(c.value) &&
+          map[c.value].length < 8
+        ) {
+          map[c.value].push(project);
+        }
+      }
+    }
+
+    return map;
+  }, [allProjects]);
+
+  const projects = projectsByCity[city] || [];
 
   return (
     <section className="max-w-6xl mx-auto py-16 px-4">
@@ -60,7 +81,7 @@ export default function FeaturedProjectsByCity() {
             className={`pb-3 text-sm font-semibold whitespace-nowrap ${
               city === c.value
                 ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-gray-500"
+                : "text-gray-500 hover:text-gray-700"
             }`}
           >
             {c.label}
@@ -68,15 +89,22 @@ export default function FeaturedProjectsByCity() {
         ))}
       </div>
 
-      {/* أول مرة فقط */}
-      {isLoading && allProjects.length === 0 ? (
-        <p>Loading projects...</p>
+      {/* Content */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-64 rounded-xl bg-gray-200 animate-pulse"
+            />
+          ))}
+        </div>
       ) : projects.length === 0 ? (
-        <p>No projects found for {city}.</p>
+        <p className="text-gray-500">No projects found for {city}.</p>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {projects.map((item: any) => (
+            {projects.slice(0, 4).map((item: any) => (
               <ProjectCard key={item.id} property={item} />
             ))}
           </div>

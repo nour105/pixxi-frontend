@@ -5,16 +5,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const TABS = [
-  { key: "RENT", label: "Rent" },
-  { key: "BUY", label: "Buy" },
   { key: "NEW", label: "New projects" },
-  { key: "COMMERCIAL", label: "Commercial" },
 ];
 
 export default function HeroSearch() {
   const router = useRouter();
 
-  const [purpose, setPurpose] = useState("RENT");
+  // ✅ Default purpose is NEW projects
+  const [purpose] = useState<"NEW">("NEW");
   const [location, setLocation] = useState("");
   const [propertyType, setPropertyType] = useState("");
   const [bedrooms, setBedrooms] = useState("");
@@ -22,7 +20,9 @@ export default function HeroSearch() {
   const handleSearch = () => {
     const params = new URLSearchParams();
 
-    if (purpose) params.set("purpose", purpose);
+    // ✅ Always search for NEW projects
+    params.set("purpose", "NEW");
+
     if (location) params.set("q", location);
     if (propertyType) params.set("type", propertyType);
     if (bedrooms) params.set("bedrooms", bedrooms);
@@ -33,16 +33,18 @@ export default function HeroSearch() {
   return (
     <section
       className="relative h-[520px] bg-cover bg-center"
-      style={{ backgroundImage: "url('/hero.jpg')" }}
+      style={{ backgroundImage: "url('/bnan-realestate.jpg')" }}
     >
+      {/* Overlay */}
       <div className="absolute inset-0 bg-black/40" />
 
       <div className="relative z-10 max-w-6xl mx-auto h-full flex flex-col justify-center px-4">
         <h1 className="text-white text-4xl md:text-5xl font-bold text-center mb-3">
           Your home search starts here
         </h1>
+
         <p className="text-white/90 text-center mb-8">
-          Find properties to rent, buy or invest.
+          Discover the best new projects in the UAE
         </p>
 
         <div className="bg-white/95 backdrop-blur rounded-2xl shadow-xl p-4">
@@ -52,12 +54,7 @@ export default function HeroSearch() {
               {TABS.map((tab) => (
                 <button
                   key={tab.key}
-                  onClick={() => setPurpose(tab.key)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                    purpose === tab.key
-                      ? "bg-white shadow text-blue-600"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
+                  className="px-4 py-2 rounded-full text-sm font-medium bg-white shadow text-blue-600 cursor-default"
                 >
                   {tab.label}
                 </button>
@@ -65,9 +62,10 @@ export default function HeroSearch() {
             </div>
           </div>
 
-          {/* Inputs */}
+          {/* Search Inputs */}
           <div className="flex flex-col md:flex-row gap-3">
             <input
+              type="text"
               className="flex-1 w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Location, project or developer"
               value={location}
