@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { getDevelopers } from "../lib/api";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,17 +14,24 @@ interface Developer {
 }
 
 export default function DevelopersPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const pageParam = parseInt(searchParams.get("page") || "1", 10);
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(pageParam);
+  const [totalPages, setTotalPages] = useState(1);
   const perPage = 12;
 
   useEffect(() => {
     const fetchDevelopers = async () => {
       setLoading(true);
       try {
-        const res = await getDevelopers();
+        const res = await getDevelopers(page, perPage);
         setDevelopers(res?.data?.list || []);
+        const total = res?.data?.totalSize || 1;
+        setTotalPages(Math.ceil(total / perPage));
       } catch (err) {
         console.error("Failed to fetch developers", err);
       } finally {
@@ -32,14 +40,12 @@ export default function DevelopersPage() {
     };
 
     fetchDevelopers();
-  }, []);
 
-  // Pagination slice
-  const totalPages = Math.ceil(developers.length / perPage);
-  const paginatedDevelopers = developers.slice(
-    (page - 1) * perPage,
-    page * perPage
-  );
+    // Update URL query without reload
+    const params = new URLSearchParams(window.location.search);
+    params.set("page", page.toString());
+    router.replace(`/developers?${params.toString()}`);
+  }, [page, router]);
 
   const handlePrev = () => setPage((prev) => Math.max(prev - 1, 1));
   const handleNext = () => setPage((prev) => Math.min(prev + 1, totalPages));
@@ -54,10 +60,7 @@ export default function DevelopersPage() {
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {Array.from({ length: perPage }).map((_, i) => (
-            <div
-              key={i}
-              className="h-48 rounded-2xl bg-gray-200 animate-pulse"
-            />
+            <div key={i} className="h-48 rounded-2xl bg-gray-200 animate-pulse" />
           ))}
         </div>
       ) : developers.length === 0 ? (
@@ -65,7 +68,7 @@ export default function DevelopersPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-            {paginatedDevelopers.map((dev) => (
+            {developers.map((dev) => (
               <Link
                 key={dev.id}
                 href={`/developers/${encodeURIComponent(dev.name)}/projects`}
@@ -79,19 +82,14 @@ export default function DevelopersPage() {
                     className="object-contain grayscale group-hover:grayscale-0 transition"
                   />
                 </div>
-                <h3 className="text-center font-semibold text-gray-900">
-                  {dev.name}
-                </h3>
+                <h3 className="text-center font-semibold text-gray-900">{dev.name}</h3>
                 {dev.projectsCount !== undefined && (
-                  <p className="mt-1 text-sm text-gray-500">
-                    {dev.projectsCount} projects
-                  </p>
+                  <p className="mt-1 text-sm text-gray-500">{dev.projectsCount} projects</p>
                 )}
               </Link>
             ))}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-4 mt-8">
               <button

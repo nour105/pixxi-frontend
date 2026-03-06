@@ -23,7 +23,7 @@ const normalize = (value: string) =>
   value?.toLowerCase().replace(/\s+/g, "");
 
 const fetcher = async () => {
-  const res = await getProjectsByCity("", 1, 60);
+  const res = await getProjectsByCity("", 1, 1000);
   return res?.data?.list || [];
 };
 
@@ -31,7 +31,7 @@ export default function FeaturedProjectsByCity() {
   const [city, setCity] = useState("Dubai");
 
   const { data: allProjects = [], isLoading } = useSWR(
-    "featured-projects-all",
+    "featured-projects",
     fetcher,
     {
       revalidateOnFocus: false,
@@ -39,35 +39,21 @@ export default function FeaturedProjectsByCity() {
     }
   );
 
-  const projectsByCity = useMemo(() => {
-    const map: Record<string, any[]> = {
-      Dubai: [],
-      "Abu Dhabi": [],
-      Sharjah: [],
-      "Ras Al Khaimah": [],
-    };
-
-    for (const project of allProjects) {
-      for (const c of CITIES) {
-        if (
-          normalize(project.cityName) === normalize(c.value) &&
-          map[c.value].length < 8
-        ) {
-          map[c.value].push(project);
-        }
-      }
-    }
-
-    return map;
-  }, [allProjects]);
-
-  const projects = projectsByCity[city] || [];
+  const projects = useMemo(() => {
+    return allProjects
+      .filter(
+        (project: any) =>
+          normalize(project.cityName) === normalize(city)
+      )
+      .slice(0, 4);
+  }, [allProjects, city]);
 
   return (
     <section className="max-w-6xl mx-auto py-16 px-4">
       <h2 className="text-3xl font-bold mb-2">
         Explore new projects in the UAE
       </h2>
+
       <p className="text-gray-500 mb-8">
         Discover the latest off-plan properties and be informed.
       </p>
@@ -89,7 +75,6 @@ export default function FeaturedProjectsByCity() {
         ))}
       </div>
 
-      {/* Content */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -104,7 +89,7 @@ export default function FeaturedProjectsByCity() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {projects.slice(0, 4).map((item: any) => (
+            {projects.map((item: any) => (
               <ProjectCard key={item.id} property={item} />
             ))}
           </div>

@@ -37,7 +37,7 @@ export default function SearchPageClient() {
           page: page.toString(),
           size: "100",
         });
-        const res = await fetch(`https://admin.bnan-realestate.com//api/properties?${query.toString()}`, {
+        const res = await fetch(`https://admin.bnan-realestate.com/api/properties?${query.toString()}`, {
           cache: "no-store",
         });
         const json = await res.json();

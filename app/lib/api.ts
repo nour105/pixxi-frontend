@@ -17,13 +17,31 @@ export async function getDeveloperProperties(name: string, page = 1, size = 12) 
   if (!res.ok) throw new Error("Failed to fetch properties");
   return res.json();
 }
-export async function getDevelopers() {
-  const res = await fetch(`${API_URL}/developers`, {
+// lib/api.ts
+// lib/api.ts
+export async function getDevelopers(page = 1, size = 12) {
+  const res = await fetch(`${API_URL}/developers?page=${page}&size=${size}`, {
+    headers: { Accept: "application/json" },
     cache: "no-store",
   });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("Developers fetch error:", text);
+    throw new Error("Failed to fetch developers");
+  }
+
   return res.json();
 }
 
+export async function getDeveloperProjects(name: string, page = 1, size = 12) {
+  const res = await fetch(`${API_URL}/developers/${encodeURIComponent(name)}/properties?page=${page}&size=${size}`, {
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch developer projects");
+  return res.json();
+}
 export async function getAreas(city: string) {
   const res = await fetch(`${API_URL}/areas/${city}`, {
     cache: "no-store",
