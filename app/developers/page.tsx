@@ -16,13 +16,17 @@ interface Developer {
 export default function DevelopersPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-
-  const pageParam = parseInt(searchParams.get("page") || "1", 10);
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(pageParam);
+  const [page, setPage] = useState(1); // default
   const [totalPages, setTotalPages] = useState(1);
   const perPage = 12;
+
+  // Only read URL params client-side
+  useEffect(() => {
+    const pageParam = parseInt(searchParams.get("page") || "1", 10);
+    setPage(pageParam);
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchDevelopers = async () => {
@@ -42,9 +46,11 @@ export default function DevelopersPage() {
     fetchDevelopers();
 
     // Update URL query without reload
-    const params = new URLSearchParams(window.location.search);
-    params.set("page", page.toString());
-    router.replace(`/developers?${params.toString()}`);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("page", page.toString());
+      router.replace(`/developers?${params.toString()}`);
+    }
   }, [page, router]);
 
   const handlePrev = () => setPage((prev) => Math.max(prev - 1, 1));
