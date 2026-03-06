@@ -6,7 +6,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
         {/* Logo */}
         <Link href="/">
-          <span className="text-2xl font-bold text-green-600">Banan Real Estate</span>
+          <span className="text-2xl font-bold text-green-600">Bnan Real Estate</span>
         </Link>
 
         {/* Navigation */}

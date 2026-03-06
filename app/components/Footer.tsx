@@ -4,7 +4,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 py-8 grid md:grid-cols-3 gap-8">
         {/* About */}
         <div>
-          <h3 className="font-bold text-lg mb-2">Banan Real Estate</h3>
+          <h3 className="font-bold text-lg mb-2">Bnan Real Estate</h3>
           <p>Providing the best off-plan and ready properties across Dubai. Trusted by thousands of clients.</p>
         </div>
 
@@ -22,14 +22,14 @@ export default function Footer() {
         {/* Contact */}
         <div>
           <h3 className="font-bold text-lg mb-2">Contact</h3>
-          <p>Email: info@bananrealestate.com</p>
+          <p>Email: info@bnanrealestate.com</p>
           <p>Phone: +971 50 000 0000</p>
           <p>Address: Dubai, UAE</p>
         </div>
       </div>
 
       <div className="border-t border-gray-700 mt-4 text-center py-4 text-gray-400 text-sm">
-        © {new Date().getFullYear()} Banan Real Estate. All rights reserved.
+        © {new Date().getFullYear()} Bnan Real Estate. All rights reserved.
       </div>
     </footer>
   );
