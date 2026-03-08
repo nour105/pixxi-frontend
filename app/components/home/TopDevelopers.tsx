@@ -13,9 +13,9 @@ export default async function TopDevelopers() {
 
         <Link
           href="/developers"
-          className="text-sm font-semibold text-blue-600 hover:underline"
+          className="text-sm font-semibold uppercase text-black hover:underline"
         >
-          View all developers
+          View all developers &rarr;
         </Link>
       </div>
 
@@ -42,7 +42,7 @@ export default async function TopDevelopers() {
             </h3> */}
 
             {/* CTA */}
-            <p className="mt-2 text-center text-sm text-blue-600 opacity-0 group-hover:opacity-100 transition">
+            <p className="mt-2 text-center text-sm text-black hover:underline opacity-0 group-hover:opacity-100 transition">
               View projects →
             </p>
           </Link>

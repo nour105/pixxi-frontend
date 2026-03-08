@@ -99,9 +99,9 @@ export default function FeaturedProjectsByCity() {
               href={`/see-projects/${city
                 .toLowerCase()
                 .replace(/\s+/g, "-")}`}
-              className="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition"
+              className="inline-block text-md px-6 py-3 bg-[#d8b564] text-white font-semibold rounded-xl hover:bg-black transition"
             >
-              See all projects
+              See All Projects
             </a>
           </div>
         </>

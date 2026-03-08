@@ -16,21 +16,32 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Bnan Real Estate",
+  description: "Bnan Real Estate platform for discovering premium properties and projects in Lebanon and beyond.",
+  icons: {
+    icon: "/Bnan-FAV-icon.png",
+    shortcut: "/Bnan-FAV-icon.png",
+    apple: "/Bnan-FAV-icon.png",
+  },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+    >
       <body className="flex flex-col min-h-screen">
         {/* Header */}
         <Header />
 
         {/* Main content */}
-        <main className="flex-grow">{children}</main>
+        <main className="flex-grow">
+          {children}
+        </main>
 
         {/* Footer */}
         <Footer />
