@@ -1,13 +1,27 @@
 const API_URL = "https://admin.bnan-realestate.com/api";
 
 export async function getProperties(params?: Record<string, any>) {
-  const query = new URLSearchParams(params as any).toString();
+  const query = new URLSearchParams({
+    ...params,
+    size: params?.perPage || 12,
+  }).toString();
+
   const res = await fetch(`${API_URL}/properties?${query}`, {
     cache: "no-store",
   });
+
+  if (!res.ok) throw new Error("Failed to fetch properties");
   return res.json();
 }
+export async function getFilters() {
+  const res = await fetch(`${API_URL}/properties/filters`, { cache: "no-store" });
+  console.log("Filter response status:", res.status);
+  const data = await res.json().catch(() => null);
+  console.log("Filter response data:", data);
 
+  if (!res.ok) throw new Error("Failed to fetch filters");
+  return data;
+}
 export async function getDeveloperProperties(name: string, page = 1, size = 12) {
   const res = await fetch(
     `${API_URL}/developers/${encodeURIComponent(name)}/properties?size=${size}&page=${page}`,
