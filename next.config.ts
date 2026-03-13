@@ -1,22 +1,20 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
- images: {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "www.pixxicrm.ae",
+        hostname: "pixxicrm.ae", // <-- remove www
         pathname: "/api/profile/upload/**",
       },
-      // Optional: generic fallback pattern
+      // Optional: allow all paths under this host
       {
         protocol: "https",
-        hostname: "www.pixxicrm.ae",
-        pathname: "/**", // يسمح لأي path من هالhost
+        hostname: "pixxicrm.ae",
+        pathname: "/**",
       },
     ],
   },
-
 };
 
-export default nextConfig;
+module.exports = nextConfig;

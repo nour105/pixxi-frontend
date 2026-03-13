@@ -117,3 +117,18 @@ export async function searchAreas(
 
   return res.json();
 }
+/* ===== SEND LEAD (Pixxi) ===== */
+
+export async function sendLead(data: any) {
+  const res = await fetch("/api/send-lead", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) throw new Error("Failed to send lead");
+
+  return res.json();
+}

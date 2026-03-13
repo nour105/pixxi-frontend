@@ -1,30 +1,78 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
 
-/* ================= UTIL ================= */
+import "swiper/css";
+import "swiper/css/navigation";
+
+import { X } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  MapPin,
+  Building,
+  Calendar,
+  Phone,
+  MessageCircle,
+  Bath,
+  BedDouble,
+  Ruler,
+} from "lucide-react";
+
 const slugify = (text: string) =>
-  text
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  text.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
 
-/* ================= PAGE ================= */
 interface Style {
   id: string;
   title: string;
   imgUrl: string[];
   area: number;
 }
+const amenityEmojis: Record<string, string> = {
+  "Study": "📚",
+  "Private Garden": "🌿",
+  "Security": "🛡️",
+  "Maids Room": "🧹",
+  "Pets Allowed": "🐾",
+  "Private Pool": "🏊",
+  "Children's Play Area": "🛝",
+  "Covered Parking": "🚗",
+  "Barbecue Area": "🍖",
+  "Lobby in Building": "🏨",
+  "Balcony": "🌅",
+  "Private Jacuzzi": "🛁",
+  "Central A/C & Heating": "❄️",
+  "Private Gym": "🏋️",
+  "Shared Pool": "🏊",
+  "Pantry": "🍽️",
+  "Mezzanine": "🏢",
+  "Available Networked": "🌐",
+  "Dinning in building": "🍴",
+  "Shared Spa": "🧘",
+  "Shared Gym": "🏋️",
+  "Concierge Service": "🛎️",
+  "Maid Service": "🧹",
+  "Built in Wardrobes": "👕",
+  "Walk-in Closet": "🚪",
+  "Built in Kitchen Appliances": "🍳",
+  "View of Water": "🌊",
+  "View of Landmark": "🏙️",
+  "Vast-compliant": "🧭",
+  "Children's Pool": "🏊‍♂️",
+};
 
 export default function ProjectPage() {
-  const { name } = useParams();
+  const params = useParams();
   const router = useRouter();
-
+  const name = params?.name || "";
+const [activeGallery, setActiveGallery] = useState<number | null>(null);
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activePlan, setActivePlan] = useState<string | null>(null);
   const [amenitiesMap, setAmenitiesMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -38,158 +86,476 @@ export default function ProjectPage() {
         const list = json?.data?.list || [];
         const match = list.find((p: any) => slugify(p.title) === name);
         setProject(match || null);
-      } catch (e) {
-        setProject(null);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    loadProject();
+    if (name) loadProject();
   }, [name]);
 
-  // Fetch amenities
   useEffect(() => {
-    const fetchAmenities = async () => {
-      try {
-        const res = await fetch(`https://admin.bnan-realestate.com/api/properties/amenities`);
-        if (!res.ok) throw new Error("Failed to load amenities");
-        const json = await res.json();
-        const map: Record<string, string> = {};
-        json.data.forEach((amenity: any) => {
-          map[amenity.code] = amenity.name;
-        });
-        setAmenitiesMap(map);
-      } catch (err) {
-        console.error(err);
-      }
+    const loadAmenities = async () => {
+      const res = await fetch(
+        "https://admin.bnan-realestate.com/api/properties/amenities"
+      );
+      const json = await res.json();
+
+      const map: Record<string, string> = {};
+      json.data?.forEach((a: any) => (map[a.code] = a.name));
+      setAmenitiesMap(map);
     };
-    fetchAmenities();
+
+    loadAmenities();
   }, []);
 
-  if (loading)
-    return <p className="text-center mt-20">Loading...</p>;
-
-  if (!project)
+  if (loading) {
     return (
-      <div className="text-center mt-20">
-        <p className="text-red-500 mb-4">Project not found</p>
-        <button onClick={() => router.back()} className="text-blue-600 underline">
-          Go back
+      <div className="min-h-screen flex items-center justify-center">
+        Loading Project...
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <h1 className="text-3xl font-bold">Project Not Found</h1>
+        <button
+          onClick={() => router.back()}
+          className="mt-6 px-6 py-3 bg-black text-white rounded-lg"
+        >
+          Go Back
         </button>
       </div>
     );
+  }
 
-  const agent = project.agent || project.portalAgent || null;
+  const agent = project.agent || project.portalAgent;
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Back */}
-      <div className="max-w-7xl mx-auto px-4 pt-6">
-        <button
-          onClick={() => router.back()}
-          className="text-sm text-gray-600 hover:text-black"
+    <div className="bg-[#f7f7f7]">
+
+      {/* HERO */}
+
+      <section className="relative h-[90vh]">
+
+        <Image
+          src={project.photos?.[0] || "/bnan-realestate.jpg"}
+          alt={project.title}
+          fill
+          className="object-cover"
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"/>
+
+        <div className="absolute bottom-16 w-full">
+          <div className="max-w-7xl mx-auto px-6">
+
+            <motion.div
+              initial={{opacity:0, y:40}}
+              animate={{opacity:1, y:0}}
+              className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-10 text-white"
+            >
+
+              <h1 className="text-5xl font-bold mb-3">
+                {project.title}
+              </h1>
+
+              <p className="flex items-center gap-2 text-lg opacity-80 mb-6">
+                <MapPin size={18}/>
+                {project.region}, {project.cityName}
+              </p>
+
+              <div className="grid md:grid-cols-4 gap-8">
+
+                <div>
+                  <p className="opacity-70">Starting Price</p>
+                  <h3 className="text-2xl font-bold text-[#d8b564]">
+                    AED {project.price?.toLocaleString()}
+                  </h3>
+                </div>
+
+                <div>
+                  <p className="opacity-70">Developer</p>
+                  <h3 className="font-semibold">
+                    {project.developer}
+                  </h3>
+                </div>
+
+                <div>
+                  <p className="opacity-70">Handover</p>
+                  <h3 className="font-semibold">
+                    {new Date(
+                      project.newParam?.handoverTime
+                    ).getFullYear()}
+                  </h3>
+                </div>
+
+                <div className="flex gap-3">
+
+                  <a
+                    href={`https://wa.me/${agent?.phone}`}
+                    className="flex items-center gap-2 bg-green-500 px-5 py-3 rounded-lg"
+                  >
+                    <MessageCircle size={18}/>
+                    WhatsApp
+                  </a>
+
+                  <button className="border border-white px-5 py-3 rounded-lg hover:bg-white hover:text-black transition">
+                    Contact
+                  </button>
+
+                </div>
+
+              </div>
+
+            </motion.div>
+
+          </div>
+        </div>
+      </section>
+
+     {/* OVERVIEW */}
+
+<section className="max-w-7xl mx-auto px-6 py-24">
+
+  <div className=" gap-16 items-start">
+
+    {/* LEFT CONTENT */}
+
+    <div>
+
+      <p className="text-[#d8b564] uppercase tracking-widest text-sm mb-3">
+        About The Project
+      </p>
+
+      <h2 className="text-4xl font-bold mb-6 leading-tight">
+        Discover {project.title}
+      </h2>
+
+      <p className="text-gray-600 text-lg leading-relaxed">
+        {project.description}
+      </p>
+
+    </div>
+
+
+  </div>
+
+</section>
+ {/* AMENITIES */}
+
+{project.amenities?.length > 0 && (
+
+<section className="py-20 bg-white">
+
+  <div className="max-w-6xl mx-auto px-6">
+
+    <h2 className="text-3xl font-bold mb-10 text-center">
+      Amenities
+    </h2>
+
+    <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-6">
+
+      {project.amenities.map((code:string)=>{
+
+        const name = amenitiesMap[code] || code
+        const emoji = amenityEmojis[code] || "✨"
+
+        return (
+
+          <div
+            key={code}
+            className="flex items-center gap-3 text-gray-700 text-lg"
+          >
+
+            <span className="text-xl">
+              {emoji}
+            </span>
+
+            <span className="font-medium">
+              {name}
+            </span>
+
+          </div>
+
+        )
+
+      })}
+
+    </div>
+
+  </div>
+
+</section>
+
+)}
+
+{/* FLOOR PLANS */}
+
+{project.newParam?.floorPlan?.length > 0 && (
+
+<section className="max-w-7xl mx-auto px-6 py-20">
+
+  <h2 className="text-3xl font-bold text-center mb-12">
+    Floor Plans
+  </h2>
+
+  <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
+
+    {project.newParam.floorPlan.map((plan: Style) => (
+
+      <div
+        key={plan.id}
+        className="bg-white rounded-xl border hover:shadow-lg transition p-4"
+      >
+
+        <div
+          className="relative h-48 cursor-pointer"
+          onClick={() => setActivePlan(plan.imgUrl?.[0])}
         >
-          ← Back to projects
-        </button>
+
+          <Image
+            src={plan.imgUrl?.[0]}
+            alt={plan.title}
+            fill
+            className="object-contain"
+          />
+
+        </div>
+
+        <div className="mt-3 text-center">
+
+          <h3 className="font-semibold text-sm">
+            {plan.title}
+          </h3>
+
+          <p className="text-gray-500 text-sm">
+            {plan.area} sqft
+          </p>
+
+        </div>
+
       </div>
 
-      {/* Hero */}
-      <section className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 grid grid-cols-2 gap-2 rounded-2xl overflow-hidden">
-          {project.photos?.slice(0, 4).map((img: string, i: number) => (
-            <img key={i} src={img} className="h-64 w-full object-cover" alt={project.title} />
-          ))}
+    ))}
+
+  </div>
+
+</section>
+
+)}
+     {/* GALLERY */}
+
+{project.photos?.length > 1 && (
+
+<section className="bg-white py-20">
+
+  <div className="max-w-7xl mx-auto px-6">
+
+    <h2 className="text-3xl font-bold text-center mb-12">
+      Gallery
+    </h2>
+
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+      {project.photos.slice(1,12).map((img:string,i:number)=>(
+
+        <div
+          key={i}
+          onClick={()=>setActiveGallery(i)}
+          className="relative h-44 rounded-xl overflow-hidden cursor-pointer group"
+        >
+
+          <Image
+            src={img}
+            alt=""
+            fill
+            className="object-cover group-hover:scale-110 transition duration-500"
+          />
+
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition"/>
+
         </div>
 
-        <div className="bg-white rounded-2xl shadow p-6 sticky top-24 h-fit">
-          <h1 className="text-2xl font-bold">{project.title}</h1>
-          <p className="text-gray-500 mt-1">{project.region}, {project.cityName}</p>
+      ))}
 
-          {project.price && (
-            <p className="mt-4 text-3xl font-bold text-blue-600">
-              AED {project.price.toLocaleString()}
-            </p>
-          )}
+    </div>
 
-          <button className="w-full mt-6 bg-blue-600 text-white py-3 rounded-xl font-semibold">
-            Register Interest
-          </button>
-        </div>
-      </section>
+  </div>
 
-      {/* Overview */}
-      <section className="max-w-7xl mx-auto px-4 py-10">
-        <h2 className="text-xl font-bold mb-3">About the project</h2>
-        <p className="text-gray-700 leading-relaxed whitespace-pre-line max-w-4xl">
-          {project.description}
-        </p>
-      </section>
+</section>
 
-      {/* Amenities */}
-      {project.amenities?.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-10">
-          <h2 className="text-xl font-bold mb-3">Amenities</h2>
-          <div className="flex flex-wrap gap-2">
-            {project.amenities.map((amenity: string) => (
-              <span
-                key={amenity}
-                className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"
-              >
-                {amenitiesMap[amenity] || amenity}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
+)}
+      {activePlan && (
 
-      {/* Floor Plans */}
-      {project.newParam?.floorPlan?.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-10">
-          <h2 className="text-xl font-bold mb-3">Units / Floor Plans</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {project.newParam.floorPlan.map((plan: Style) => (
-              <div key={plan.id} className="border rounded-xl overflow-hidden">
-                <img
-                  src={plan.imgUrl[0]}
-                  alt={plan.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-3">
-                  <h4 className="font-semibold">{plan.title}</h4>
-                  <p className="text-sm text-gray-500">Area: {plan.area} sqft</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+<div
+  className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6"
+  onClick={() => setActivePlan(null)}
+>
 
-      {/* Agent Info */}
-      {agent && (
-        <section className="max-w-7xl mx-auto px-4 py-10">
-          <h2 className="text-xl font-bold mb-3">Contact Agent</h2>
-          <div className="bg-white p-6 rounded-2xl shadow flex flex-col md:flex-row items-center gap-4">
-            <img
-              src={agent.avatar || "/avatar-placeholder.png"}
-              alt={agent.name}
-              className="w-16 h-16 rounded-full object-cover"
+  <Image
+    src={activePlan}
+    alt="Floor Plan"
+    width={1200}
+    height={900}
+    className="max-h-[90vh] w-auto rounded-xl"
+  />
+
+</div>
+
+)}
+{activeGallery !== null && (
+
+<div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
+
+  {/* CLOSE */}
+
+  <button
+    onClick={()=>setActiveGallery(null)}
+    className="absolute top-6 right-6 text-white"
+  >
+    <X size={32}/>
+  </button>
+
+  <div className="w-full max-w-6xl px-6">
+
+    <Swiper
+      modules={[Navigation]}
+      navigation
+      initialSlide={activeGallery}
+      className="w-full"
+    >
+
+      {project.photos.slice(1,12).map((img:string,i:number)=>(
+
+        <SwiperSlide key={i}>
+
+          <div className="relative w-full h-[80vh]">
+
+            <Image
+              src={img}
+              alt=""
+              fill
+              className="object-contain"
             />
-            <div>
-              <h3 className="font-semibold">{agent.name}</h3>
-              {agent.email && <p className="text-sm text-gray-500">{agent.email}</p>}
-              {agent.phone && <p className="text-sm text-gray-500">{agent.phone}</p>}
-              {agent.phone && (
-                <a
-                  href={`https://wa.me/${agent.phone.replace(/\D/g, "")}`}
-                  className="mt-2 inline-block bg-green-500 text-white px-4 py-2 rounded"
-                >
-                  Contact via WhatsApp
-                </a>
-              )}
-            </div>
+
           </div>
+
+        </SwiperSlide>
+
+      ))}
+
+    </Swiper>
+
+  </div>
+
+</div>
+
+)}
+
+      {/* AGENT */}
+{/* 
+      {agent && (
+
+        <section className="max-w-5xl mx-auto px-6 py-20">
+
+          <div className="bg-white rounded-3xl shadow-xl p-10 flex items-center gap-8">
+
+            <Image
+              src={agent.avatar || "/avatar.png"}
+              alt={agent.name}
+              width={120}
+              height={120}
+              className="rounded-full"
+            />
+
+            <div className="flex-1">
+
+              <h3 className="text-2xl font-bold">
+                {agent.name}
+              </h3>
+
+              <p className="text-gray-500 mb-4">
+                Real Estate Consultant
+              </p>
+
+              <p className="font-semibold">
+                {agent.phone}
+              </p>
+
+            </div>
+
+            <a
+              href={`https://wa.me/${agent.phone}`}
+              className="bg-green-500 text-white px-6 py-3 rounded-lg flex items-center gap-2"
+            >
+              <MessageCircle/>
+              WhatsApp
+            </a>
+
+          </div>
+
         </section>
-      )}
+
+      )} */}
+
+{/* CTA */}
+
+<section className="relative py-28 bg-black text-white overflow-hidden">
+
+  {/* BACKGROUND GLOW */}
+
+  <div className="absolute inset-0 bg-gradient-to-br from-[#d8b564]/20 via-transparent to-transparent"/>
+
+  <div className="relative max-w-6xl mx-auto px-6">
+
+    <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-14 text-center">
+
+      <h2 className="text-4xl md:text-5xl font-bold mb-6">
+        Schedule a Private Viewing
+      </h2>
+
+      <p className="text-white/70 text-lg max-w-2xl mx-auto mb-10">
+        Discover this exclusive property with a personalized tour. 
+        Our property specialist will guide you through every detail.
+      </p>
+
+      <div className="flex flex-wrap justify-center gap-4">
+
+        <a
+          href={`https://wa.me/${agent?.phone}`}
+          className="bg-green-500 hover:bg-green-600 px-8 py-4 rounded-xl font-semibold flex items-center gap-2 transition"
+        >
+          <MessageCircle size={18}/>
+          WhatsApp
+        </a>
+
+        <a
+          href={`tel:${agent?.phone}`}
+          className="border border-white/30 hover:bg-white hover:text-black px-8 py-4 rounded-xl font-semibold flex items-center gap-2 transition"
+        >
+          <Phone size={18}/>
+          Call Now
+        </a>
+
+        <Link
+          href="/projects"
+          className="bg-[#d8b564] hover:opacity-90 px-8 py-4 rounded-xl font-semibold transition"
+        >
+          View All Projects
+        </Link>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
     </div>
   );
 }
