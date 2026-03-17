@@ -6,6 +6,8 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
+import PropertyLeadForm from "../../components/PropertyLeadForm";
+
 
 import "swiper/css";
 import "swiper/css/navigation";
@@ -216,7 +218,13 @@ const [activeGallery, setActiveGallery] = useState<number | null>(null);
           </div>
         </div>
       </section>
-
+ <div>
+  <PropertyLeadForm
+  propertyReference={project.propertyId}
+  developerId={project.developerId} 
+  projectName={project.projectName}
+/>
+      </div>
      {/* OVERVIEW */}
 
 <section className="max-w-7xl mx-auto px-6 py-24">
