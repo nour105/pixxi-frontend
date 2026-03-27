@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import PropertyLeadForm from "../../components/PropertyLeadForm";
+import { getPropertyById } from "../../lib/api";
+
 
 
 import "swiper/css";
@@ -67,8 +69,141 @@ const amenityEmojis: Record<string, string> = {
   "Children's Pool": "🏊‍♂️",
 };
 
+// نعمل map للكود مباشرة مع الاسم والemoji
+const amenitiesMapWithEmoji: Record<string, { label: string; emoji: string }> = {
+  "ST": { label: "Study", emoji: "📚" },
+  "PG": { label: "Private Garden", emoji: "🌿" },
+  "SE": { label: "Security", emoji: "🛡️" },
+  "MR": { label: "Maids Room", emoji: "🧹" },
+  "PA": { label: "Pets Allowed", emoji: "🐾" },
+  "PP": { label: "Private Pool", emoji: "🏊" },
+  "PR": { label: "Children's Play Area", emoji: "🛝" },
+  "CP": { label: "Covered Parking", emoji: "🚗" },
+  "BR": { label: "Barbecue Area", emoji: "🍖" },
+  "LB": { label: "Lobby in Building", emoji: "🏨" },
+  "BA": { label: "Balcony", emoji: "🌅" },
+  "PJ": { label: "Private Jacuzzi", emoji: "🛁" },
+  "AC": { label: "Central A/C & Heating", emoji: "❄️" },
+  "PY": { label: "Private Gym", emoji: "🏋️" },
+  "SP": { label: "Shared Pool", emoji: "🏊" },
+  "PN": { label: "Pantry", emoji: "🍽️" },
+  "MZ": { label: "Mezzanine", emoji: "🏢" },
+  "AN": { label: "Available Networked", emoji: "🌐" },
+  "DN": { label: "Dinning in building", emoji: "🍴" },
+  "SS": { label: "Shared Spa", emoji: "🧘" },
+  "SY": { label: "Shared Gym", emoji: "🏋️" },
+  "CS": { label: "Concierge Service", emoji: "🛎️" },
+  "MS": { label: "Maid Service", emoji: "🧹" },
+  "BW": { label: "Built in Wardrobes", emoji: "👕" },
+  "WC": { label: "Walk-in Closet", emoji: "🚪" },
+  "BK": { label: "Built in Kitchen Appliances", emoji: "🍳" },
+  "VW": { label: "View of Water", emoji: "🌊" },
+  "BL": { label: "View of Landmark", emoji: "🏙️" },
+  "VC": { label: "Vast-compliant", emoji: "🧭" },
+  "CO": { label: "Children's Pool", emoji: "🏊‍♂️" },
+};
+const BASE_IMG = "https://pixxicrm.ae/api";
+
+/* يحوّل نص Pixxi → نفس مفاتيح amenityEmojis عندك حرفيًا */
+const AMENITY_NORMALIZER: Record<string, string> = {
+  "bbq area": "Barbecue Area",
+  "barbecue": "Barbecue Area",
+
+  "kids play area": "Children's Play Area",
+  "children play area": "Children's Play Area",
+
+  "gym": "Private Gym",
+  "shared gym": "Shared Gym",
+  "fitness": "Private Gym",
+
+  "swimming pool": "Shared Pool",
+  "pool": "Shared Pool",
+  "private pool": "Private Pool",
+  "children pool": "Children's Pool",
+
+  "parking": "Covered Parking",
+  "car parking": "Covered Parking",
+
+  "maid room": "Maids Room",
+  "maids room": "Maids Room",
+
+  "security": "Security",
+
+  "balcony": "Balcony",
+  "jacuzzi": "Private Jacuzzi",
+
+  "wardrobes": "Built in Wardrobes",
+  "walk in closet": "Walk-in Closet",
+
+  "kitchen appliances": "Built in Kitchen Appliances",
+
+  "view of water": "View of Water",
+  "view of landmark": "View of Landmark",
+
+  "central ac": "Central A/C & Heating",
+  "ac": "Central A/C & Heating",
+
+  "pets": "Pets Allowed",
+
+  "study": "Study",
+  "garden": "Private Garden",
+};
+
+function mapPixxiToProject(p: any) {
+  /* ===== Amenities Normalize to your emoji keys ===== */
+  const normalizedAmenities = [
+    ...new Set(
+      (p?.newParameter?.amenities || "")
+        .split(",")
+        .map((a: string) => a.trim().toLowerCase())
+        .filter(Boolean)
+        .map((a: string) => AMENITY_NORMALIZER[a] || a)
+    ),
+  ];
+
+  return {
+    title: p.name,
+    description: p.description,
+    price: p.price,
+    cityName: p.cityName,
+    region: p.regionName,
+    developer: p.developerName,
+    propertyId: p.propertyId,
+
+    photos: (p.photos || []).map((ph: string) =>
+      ph.startsWith("http") ? ph : `${BASE_IMG}${ph}`
+    ),
+
+    /* 👇 هيدي أهم سطر للـ emojis */
+    amenities: normalizedAmenities,
+
+    newParam: {
+      handoverTime: p.newParameter?.handoverTime,
+      floorPlan: (p.newParameter?.style || []).map((s: any) => ({
+        id: s.id,
+        title: s.title,
+        area: s.area,
+        imgUrl: (s.imgUrl || []).map((i: string) =>
+          i.startsWith("http") ? i : `${BASE_IMG}${i}`
+        ),
+      })),
+    },
+
+    agent: {
+      name: p.portalAgentName,
+      phone: p.portalAgentPhone,
+      avatar: p.portalAgentAvatar
+        ? `${BASE_IMG}${p.portalAgentAvatar}`
+        : null,
+    },
+  };
+}
 export default function ProjectPage() {
   const params = useParams();
+const slug = params?.name as string;
+
+// جيب الـ id من آخر الرابط
+const propertyId = slug.split("-").pop();
   const router = useRouter();
   const name = params?.name || "";
 const [activeGallery, setActiveGallery] = useState<number | null>(null);
@@ -77,25 +212,34 @@ const [activeGallery, setActiveGallery] = useState<number | null>(null);
   const [activePlan, setActivePlan] = useState<string | null>(null);
   const [amenitiesMap, setAmenitiesMap] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    const loadProject = async () => {
-      try {
-        const res = await fetch(
-          "https://admin.bnan-realestate.com/api/properties?page=1&size=1000",
-          { cache: "no-store" }
-        );
-        const json = await res.json();
-        const list = json?.data?.list || [];
-        const match = list.find((p: any) => slugify(p.title) === name);
-        setProject(match || null);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (name) loadProject();
-  }, [name]);
+useEffect(() => {
+  const loadProject = async () => {
+    try {
+      const res = await fetch(
+        `https://dataapi.pixxicrm.ae/pixxiapi/v1/${propertyId}`,
+        {
+          cache: "no-store",
+          headers: {
+            "X-PIXXI-TOKEN": "FWD4fkbabKionq77p3jNuf0g3cU1ZvVZ",
+          },
+        }
+      );
+
+      const json = await res.json();
+
+      const mapped = mapPixxiToProject(json.data);
+
+      setProject(mapped);
+    } catch (err) {
+      console.error(err);
+      setProject(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (propertyId) loadProject();
+}, [propertyId]);
 
   useEffect(() => {
     const loadAmenities = async () => {
@@ -221,8 +365,9 @@ const [activeGallery, setActiveGallery] = useState<number | null>(null);
  <div>
   <PropertyLeadForm
   propertyReference={project.propertyId}
-  developerId={project.developerId} 
-  projectName={project.projectName}
+  developer={project.developer}
+  project_location={project.region}
+  project_name={project.title}
 />
       </div>
      {/* OVERVIEW */}
@@ -265,35 +410,19 @@ const [activeGallery, setActiveGallery] = useState<number | null>(null);
       Amenities
     </h2>
 
-    <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-6">
+  <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-6">
+  {project.amenities.map((code: string) => {
+    const amenity = amenitiesMapWithEmoji[code.toUpperCase()]; // force uppercase
+    if (!amenity) return null; // skip unknown codes
 
-      {project.amenities.map((code:string)=>{
-
-        const name = amenitiesMap[code] || code
-        const emoji = amenityEmojis[code] || "✨"
-
-        return (
-
-          <div
-            key={code}
-            className="flex items-center gap-3 text-gray-700 text-lg"
-          >
-
-            <span className="text-xl">
-              {emoji}
-            </span>
-
-            <span className="font-medium">
-              {name}
-            </span>
-
-          </div>
-
-        )
-
-      })}
-
-    </div>
+    return (
+      <div key={code} className="flex items-center gap-3 text-gray-700 text-lg">
+        <span className="text-xl">{amenity.emoji}</span>
+        <span>{amenity.label}</span>
+      </div>
+    );
+  })}
+</div>
 
   </div>
 

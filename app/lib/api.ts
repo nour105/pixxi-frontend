@@ -31,6 +31,15 @@ export async function getDeveloperProperties(name: string, page = 1, size = 12) 
   if (!res.ok) throw new Error("Failed to fetch properties");
   return res.json();
 }
+export async function getPropertyById(propertyId: string) {
+  const res = await fetch(
+    `${API_URL}/properties/${propertyId}`,
+    { cache: "no-store" }
+  );
+
+  if (!res.ok) throw new Error("Failed to fetch property");
+  return res.json();
+}
 // lib/api.ts
 // lib/api.ts
 export async function getDevelopers(page = 1, size = 12) {
