@@ -31,7 +31,7 @@ export default function Footer() {
                 <div>
                     <h3 className="font-bold text-lg mb-2">Contact</h3>
                     <p>Email: info@bnanrealestate.com</p>
-                    <p>Phone: +971 50 000 0000</p>
+                    <p>Phone: +971 58 532 0443</p>
                     <p>Address: Dubai, UAE</p>
                 </div>
             </div>

@@ -362,12 +362,14 @@ useEffect(() => {
           </div>
         </div>
       </section>
- <div>
+ <div> 
+
   <PropertyLeadForm
   propertyReference={project.propertyId}
   developer={project.developer}
-  project_location={project.region}
+  preferredLocation={project.region + ", " + project.cityName}
   project_name={project.title}
+  floorPlans={project.newParam?.floorPlan || []}
 />
       </div>
      {/* OVERVIEW */}

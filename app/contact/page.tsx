@@ -38,8 +38,8 @@ export default function ContactPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Phone</h3>
-              <p className="text-gray-600">+971 50 000 0000</p>
-              <p className="text-gray-600">+971 4 000 0000</p>
+              <p className="text-gray-600">+971 58 532 0443</p>
+              
             </div>
 
             {/* Email */}
@@ -182,8 +182,9 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Office Hours</h3>
-                    <p className="text-gray-600">Sunday - Thursday: 9:00 AM - 7:00 PM</p>
-                    <p className="text-gray-600">Friday - Saturday: 10:00 AM - 5:00 PM</p>
+                    <p className="text-gray-600"> Monday to Friday : 9AM to 6PM
+</p>
+                    <p className="text-gray-600">Saturday and sunday off</p>
                   </div>
                 </div>
 

@@ -1,31 +1,38 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Speaker } from "lucide-react";
+import { useState } from "react";
+
+
+interface FloorPlan {
+  id: string;
+  title: string;
+  area: number;
+}
 
 interface Props {
   propertyReference?: string;
   developer?: string | number;
-  project_location?: string | string[];
-  project_name?: string | string[];
+  preferredLocation?: string;
+  project_name?: string;
+    floorPlans?: FloorPlan[]; // 👈 new prop
+
 }
+
+
 
 export default function PropertyLeadForm({
   propertyReference,
   developer,
-  project_location,
+  preferredLocation,
   project_name,
+    floorPlans = [],
+
 }: Props) {
+  
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // ✅ Get UTM parameters from URL
-  const getUTM = (key: string) => {
-    if (typeof window === "undefined") return "";
-    const params = new URLSearchParams(window.location.search);
-    return params.get(key) || "";
-  };
-
-  // ✅ Normalize phone number to +961 format
   const normalizePhone = (value: string) => {
     let phone = value.replace(/\D/g, "");
     if (phone.startsWith("0")) phone = phone.slice(1);
@@ -33,184 +40,238 @@ export default function PropertyLeadForm({
     return "+961" + phone;
   };
 
-  const toRange = (v: FormDataEntryValue | null) => {
-    const val = String(v || "").trim();
-    if (!val) return undefined;
-    return val.includes("-") ? val : `${val}-${val}`;
+  const sizeOptions = Array.from(
+    new Map(
+      floorPlans.map((plan) => [plan.area.toString(), plan.area])
+    ).entries()
+  ).map(([value, area]) => ({ value, label: `${area} sqft` }));
+ const handleSubmit = async (e: any) => {
+  e.preventDefault();
+  setLoading(true);
+
+  const form = new FormData(e.target);
+
+  // ✅ Read all UTM params from URL
+  const params =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : null;
+
+  const utmData = {
+    utm_source: params?.get("utm_source"),
+    utm_medium: params?.get("utm_medium"),
+    utm_campaign: params?.get("utm_campaign"),
+    utm_term: params?.get("utm_term"),
+    utm_content: params?.get("utm_content"),
   };
 
- 
-
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const form = new FormData(e.target);
-  
-    const payload = {
-      formId: "f2e71549-062f-4874-8584-009df4d7f850",
-      propertyReference: propertyReference || undefined,
-      name: form.get("name"),
-      email: form.get("email"),
-      phone: normalizePhone(String(form.get("phone"))),
-      nationality: form.get("nationality") || undefined,
-      budget: toRange(form.get("budget")),
-      preferredSize: toRange(form.get("preferredSize")),
-      propertyType: form.get("propertyType") || undefined,
-      bedrooms: form.get("bedrooms") || undefined,
+  const payload = {
+  formId: "f2e71549-062f-4874-8584-009df4d7f850",
+  propertyReference,
+  name: form.get("name"),
+  email: form.get("email"),
+  phone: normalizePhone(String(form.get("phone"))),
+  nationality: form.get("nationality"),
+  budget: form.get("budget"),
+  preferredSize: form.get("preferredSize"),
+  propertyType: form.get("preferredPropertyType"),
+  paymentMethod: String(form.get("paymentMethod") || "cash").toLowerCase(),
       furnishing: form.get("furnishing") || undefined,
-      gender: form.get("gender") || undefined,
-      projectType: form.get("projectType") || "off_plan",
-      buyerType: form.get("buyerType") || "investor",
-      paymentMethod: form.get("paymentMethod") || "cash",
-      "Spoken Languages": form.get("spokenLanguages") || "",
-      preferredDeveloper: developer || undefined, // PIXXI uses ID
-        project_location: project_location || "",
-  "Project Location": project_location || "",
+  gender: String(form.get("gender"))?.toLowerCase(),
+  buyerType: form.get("buyerType"),
+bedrooms: String(form.get("bedrooms")) || undefined,  projectType: "off_plan",
+  preferredDeveloper: developer,
+  extraData: {
+    project_name,
+    locations: preferredLocation,
+    decisionTime: form.get("decisionTime"),
+    contact_method: form.get("contact_method"),
+    spokenLanguages: form.get("spokenLanguages"),
+    ...utmData,
+  },
+};
 
-      extraData: {
-        utm_source: getUTM("utm_source"),
-        utm_medium: getUTM("utm_medium") || "",
-        utm_campaign: getUTM("utm_campaign") || "",
-        utm_term: getUTM("utm_term") || "",
-        utm_content: getUTM("utm_content") || "",
-  project_location: project_location || "",
-    "Project Location": project_location || "",
-locations: project_location || "",
-project_name: project_name || "",
-        "Source Of Lead": "Marketing Campaign",
-        "Form Name": "off plan",
-        pageUrl: typeof window !== "undefined" ? window.location.href : "",
-        projectName: project_name || "",
-      },
-    };
+  await fetch("https://admin.bnan-realestate.com/api/lead", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-PIXXI-TOKEN": "FWD4fkbabKionq77p3jNuf0g3cU1ZvVZ",
+    },
+    body: JSON.stringify(payload),
+  });
 
-    try {
-      const res = await fetch("https://admin.bnan-realestate.com/api/lead", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-PIXXI-TOKEN": "FWD4fkbabKionq77p3jNuf0g3cU1ZvVZ",
-        },
-        body: JSON.stringify(payload),
-      });
+  setSuccess(true);
+  setLoading(false);
+  e.target.reset();
+};
 
-      const data = await res.json();
-      console.log("Lead submission response:", data);
-
-      if (data.statusCode === 200) {
-        setSuccess(true);
-        e.target.reset();
-      }
-    } catch (err) {
-      console.error("Lead submission error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const Line = ({ title, name, options }: any) => (
+    <div className="flex flex-wrap items-center gap-4 text-sm border-b py-3">
+      <span className="font-medium min-w-[260px]">{title}</span>
+      {options.map((o: any) => (
+        <label key={o.value} className="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name={name} value={o.value} />
+          {o.label}
+        </label>
+      ))}
+    </div>
+  );
 
   if (success) {
     return (
-      <div className="bg-green-50 p-6 rounded-xl text-center">
-        <h3 className="text-lg font-semibold text-green-700">
-          Thank you! Our agent will contact you shortly.
-        </h3>
+      <div className="p-6 text-center">
+        <h3 className="font-semibold">Thank you! Our agent will contact you shortly.</h3>
       </div>
     );
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white shadow-xl rounded-xl p-6 space-y-4"
-    >
-      <div className="grid grid-cols-4 gap-3">
-      <input
-        name="name"
-        required
-        placeholder="Full Name"
-        className="w-full border p-3"
-      />
-      <input
-        name="email"
-        required
-        placeholder="Email"
-        className="w-full border p-3"
-      />
-      <input
-        name="phone"
-        required
-        placeholder="Phone"
-        className="w-full border p-3"
-      />
-      <input
-        name="nationality"
-        placeholder="Nationality"
-        className="w-full border p-3"
-      />
+    
+   <form
+  onSubmit={handleSubmit}
+  className="w-full  bg-white p-6 md:p-8 shadow-lg text-gray-800"
+>
+  <div className="text-center my-6">
+  <h2 className="text-2xl md:text-3xl font-bold">Register Your Interest</h2>
+  <p className="text-gray-500 mt-1">Fill out the form below to get updates on properties that match your needs.</p>
 </div>
-<div className="grid grid-cols-4 gap-3">
+  {/* All Fields in Grid */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+    {/* Dropdowns */}
+    {[
+      {
+        title: "Purpose of purchase?",
+        name: "buyerType",
+        options: [
+          { value: "investor", label: "Investment" },
+          { value: "homebuyer", label: "Living" },
+          { value: "exploring", label: "Exploring" },
+        ],
+      },
+      {
+        title: "Decision time?",
+        name: "decisionTime",
+        options: [
+          { value: "asap", label: "ASAP" },
+          { value: "1month", label: "1 Month" },
+          { value: "3months", label: "3 Months" },
+        ],
+      },
+      {
+        title: "Investment size?",
+        name: "bedrooms",
+        options: [
+          { value: "studio", label: "Studio" },
+          { value: "1", label: "1BR" },
+          { value: "2", label: "2BR" },
+          { value: "3", label: "3BR" },
+          { value: "4", label: "4BR" },
+          { value: "5", label: "5BR" },
+          { value: "6", label: "6BR" },
+          { value: "7+", label: "7+ BR" },
+        ],
+      },
+      {
+        title: "Contact method?",
+        name: "contact_method",
+        options: [
+          { value: "Call", label: "Call" },
+          { value: "Whatsapp", label: "Whatsapp" },
+          { value: "Meeting", label: "Meeting" },
+        ],
+      },
+      {
+        title: "Gender?",
+        name: "gender",
+        options: [
+          { value: "Male", label: "Male" },
+          { value: "Female", label: "Female" },
+        ],
+      },
+      {
+        title: "Preferred Property Type?",
+        name: "preferredPropertyType",
+        options: [
+          { value: "Apartment", label: "Apartment" },
+          { value: "Villa", label: "Villa" },
+          { value: "Townhouse", label: "Townhouse" },
+          { value: "Studio", label: "Studio" },
+        ],
+      },
+      {
+        title: "Payment Method?",
+        name: "paymentMethod",
+        options: [
+          { value: "Cash", label: "Cash" },
+          { value: "Mortgage", label: "Mortgage" },
+          { value: "Installments", label: "Installments" },
+        ],
+      },
+      {
+        title: "Furnishing?",
+        name: "furnishing",
+        options: [
+          { value: "furnished", label: "Furnished" },
+          { value: "unfurnished", label: "Unfurnished" },
+          { value: "any", label: "Any" },
+        ],
+      },
+    ].map((field) => (
+      <select
+        key={field.name}
+        name={field.name}
+        required
+        className="w-full border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+      >
+        <option value="">{field.title}</option>
+        {field.options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    ))}
+  {/* Dynamic Preferred Size */}
+        <select
+          name="preferredSize"
+          required
+          className="w-full border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+        >
+          <option value="">Preferred Size (sqft)</option>
+          {sizeOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+    {/* Input Fields */}
+    {[
+      { name: "name", placeholder: "Full Name" },
+      { name: "phone", placeholder: "Phone" },
+      { name: "email", placeholder: "Email" },
+      { name: "spokenLanguages", placeholder: "Spoken Languages" },
+      { name: "nationality", placeholder: "Nationality" },
+      { name: "budget", placeholder: "Budget in AED" },
+    ].map((field) => (
       <input
-        name="budget"
-        placeholder="Budget (e.g. 5000-10000)"
-        className="w-full border p-3"
+        key={field.name}
+        name={field.name}
+        required
+        placeholder={field.placeholder}
+        className="w-full border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
       />
-      <input
-        name="preferredSize"
-        placeholder="Preferred Size sqft (e.g. 500-1000)"
-        className="w-full border p-3"
-      />
+    ))}
+   
+  </div>
+   {/* Submit Button */}
+  <button
+    type="submit"
+    disabled={loading}
+    className="w-56 block cursor-pointer bg-black hover:bg-[#d8b564] text-center m-auto text-white py-3 rounded-lg font-semibold mt-6 transition"
+  >
+    {loading ? "Submitting..." : "Submit"}
+  </button>
 
-      <select name="propertyType" className="w-full border p-3">
-        <option value="">Property Type</option>
-        <option value="Apartment">Apartment</option>
-        <option value="Villa">Villa</option>
-      </select>
-
-      <select name="bedrooms" className="w-full border p-3">
-        <option value="">Bedrooms</option>
-        <option value="studio">Studio</option>
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-      </select>
-       <select name="furnishing" className="w-full border p-3">
-        <option value="">Furnishing</option>
-        <option value="furnished">Furnished</option>
-        <option value="unfurnished">Unfurnished</option>
-        <option value="any">Any</option>
-      </select>
-      
-      <select name="gender" className="w-full border p-3">
-        <option value="">Gender</option>
-        <option value="male">Male</option>
-        <option value="female">Female</option>
-      </select>
-         <select name="projectType" className="w-full border p-3">
-        <option value="off_plan">Off Plan</option>
-        <option value="secondary">Secondary</option>
-      </select>
-
-
-      <select name="buyerType" className="w-full border p-3">
-        <option value="investor">Investor</option>
-        <option value="homebuyer">Home Buyer</option>
-      </select>
-
-      <select name="paymentMethod" className="w-full border p-3">
-        <option value="cash">Cash</option>
-        <option value="mortgage">Mortgage</option>
-        <option value="cheque">Cheque</option>
-      </select>
-             <button className="w-full bg-black text-white py-3">
-        {loading ? "Submitting..." : "Submit"}
-      </button>
-          {/* <input
-        name="spokenLanguages"
-        placeholder="Spoken Languages"
-        className="w-full border p-3"
-      /> */}
-</div> 
-    </form>
+</form>
   );
 }
